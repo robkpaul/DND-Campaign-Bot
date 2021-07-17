@@ -1,3 +1,4 @@
+from discord.embeds import Embed
 from dotenv import load_dotenv
 import discord, logging, os, re, datetime
 
@@ -6,6 +7,8 @@ load_dotenv()
 bot_token = os.getenv('DISCORD_BOT_TOKEN')
 
 botClient = discord.Client()
+
+checkmark = '✅'
 
 async def quest_command(message, args):
     quest = {}
@@ -17,13 +20,18 @@ async def quest_command(message, args):
         dateOf = datetime.date(datetime.datetime.now().year+1, dateOf.month, dateOf.day)
     quest['date'] = dateOf
     quest['creator'] = message.author
+    quest['members'] = []
 
-    questResponse = discord.Embed(title = quest['title'])
+    questResponse = discord.Embed(title = 'Quest: %s' % quest['title'])
     questResponse.add_field(name='Creator', value=quest['creator'].mention)
-    questResponse.add_field(name='Scheduled For:', value=quest['date'].strftime('%A, %m/%d')+ ' @ '+quest['time'].strftime('%H:%S'))
-    questResponse.set_footer(text='React with a %s to join.' % u'\U00002705')
+    questResponse.add_field(name='Scheduled For', value=quest['date'].strftime('%A, %m/%d')+ ' @ '+quest['time'].strftime('%H:%S'))
+    questResponse.add_field(name=chr(173), value=chr(173))
+    questResponse.add_field(name='Party Members', value=quest['creator'].mention+'\n')
+    questResponse.set_footer(text='React with a %s to join.' % checkmark)
     
-    await message.channel.send(embed = questResponse)
+    msg = await message.channel.send(embed = questResponse)
+    await msg.add_reaction(checkmark)
+
 
 #reads commands in and directs to the correct command
 async def cmd_reader(message):
@@ -36,7 +44,6 @@ async def cmd_reader(message):
         else:
             await message.channel.send('Incorrect format for the $quest command')
 
-
 @botClient.event
 async def on_ready():
     print('Logged in as {}'.format(botClient.user))
@@ -44,6 +51,17 @@ async def on_ready():
 @botClient.event
 async def on_message(message):
     if message.author != botClient.user and message.content.startswith('$'):
-        await cmd_reader(message)
+        await cmd_reader(message) 
+    elif message.author == botClient.user:
+        return
+
+@botClient.event
+async def on_reaction_add(reaction, user):
+    if reaction.message.author == botClient.user and user != botClient.user:
+        if len(reaction.message.embeds) > 0:
+            if reaction.message.embeds[0].title.startswith('Quest:') and str(reaction.emoji) == checkmark and user.mention != reaction.message.embeds[0].fields[0].value:
+                    party = reaction.message.embeds[0].fields[3]
+                    newEmbed = reaction.message.embeds[0].set_field_at(3, name=party.name, value=party.value+' '+user.mention)
+                    await reaction.message.edit(embed = newEmbed)
 
 botClient.run(bot_token)
