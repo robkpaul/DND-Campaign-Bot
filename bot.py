@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-from oauth2client.service_account import ServiceAccountCredentials
 import discord, logging, os, re, datetime
 
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +17,13 @@ async def quest_command(message, args):
         dateOf = datetime.date(datetime.datetime.now().year+1, dateOf.month, dateOf.day)
     quest['date'] = dateOf
     quest['creator'] = message.author
-    await message.channel.send(quest)
+
+    questResponse = discord.Embed(title = quest['title'])
+    questResponse.add_field(name='Creator', value=quest['creator'].mention)
+    questResponse.add_field(name='Scheduled For:', value=quest['date'].strftime('%A, %m/%d')+ ' @ '+quest['time'].strftime('%H:%S'))
+    questResponse.set_footer(text='React with a %s to join.' % u'\U00002705')
+    
+    await message.channel.send(embed = questResponse)
 
 #reads commands in and directs to the correct command
 async def cmd_reader(message):
