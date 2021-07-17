@@ -1,10 +1,13 @@
-from discord.embeds import Embed
 from dotenv import load_dotenv
-import discord, logging, os, re, datetime
+import discord, logging, os, re, datetime, pymongo
 
 logging.basicConfig(level=logging.INFO)
 load_dotenv()
 bot_token = os.getenv('DISCORD_BOT_TOKEN')
+mongo_URI = os.getenv('MONGODB_URI')
+
+mongoClient = pymongo.MongoClient(mongo_URI, ssl=True, ssl_cert_reqs='CERT_NONE')
+questDB = mongoClient['Modron']['Quests']
 
 botClient = discord.Client()
 
