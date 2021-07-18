@@ -1,9 +1,7 @@
-from dotenv import load_dotenv
 from discord.ext import commands
-import discord, logging, os, re, datetime, motor.motor_asyncio
+import discord, logging, os, datetime, motor.motor_asyncio
 
 logging.basicConfig(level=logging.INFO)
-load_dotenv()
 bot_token = os.getenv('DISCORD_BOT_TOKEN')
 mongo_URI = os.getenv('MONGODB_URI')
 
