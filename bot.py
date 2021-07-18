@@ -30,7 +30,7 @@ async def quest_command(message, args):
     quest['_id'] = 'quest%s' % str(newCounter['quests'])
     
     await questDB.replace_one({'_id': 'counter'}, newCounter) # replaces the counter document in the database with the new one (basically just a +1 to the quest counter)
-    await questDB.insert_one(quest) # inserts the current quest into the q
+    await questDB.insert_one(quest) # inserts the current quest into the quest collection
     
     #creating the embed for the quest message
     questResponse = discord.Embed(title= quest['title'], description= quest['_id'])
@@ -74,5 +74,8 @@ async def on_reaction_add(reaction, user):
                     party = reaction.message.embeds[0].fields[3]
                     newEmbed = reaction.message.embeds[0].set_field_at(3, name=party.name, value=party.value+' '+user.mention)
                     await reaction.message.edit(embed = newEmbed)
+                    questDoc = await questDB.find_one({'_id': reaction.message.embeds[0].description})
+                    questDoc['members'].append(user.id)
+                    await questDB.replace_one({'_id': reaction.message.embeds[0].description}, questDoc)
 
 botClient.run(bot_token)
