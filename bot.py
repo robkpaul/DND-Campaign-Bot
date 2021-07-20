@@ -6,9 +6,10 @@ logging.basicConfig(level=logging.INFO)
 load_dotenv()
 bot_token = os.getenv('DISCORD_BOT_TOKEN')
 mongo_URI = os.getenv('MONGODB_URI')
+mongo_Database = os.getenv('MONGODB_COLLECTION')
 
 mongoClient = motor.motor_asyncio.AsyncIOMotorClient(mongo_URI, serverSelectionTimeoutMS=5000, ssl=True, ssl_cert_reqs='CERT_NONE') # Client for the Motor MongoDB
-questDB = mongoClient['Modron']['Quests'] # Goes to the specific Database then Collection for this project.
+questDB = mongoClient[mongo_Database]['Quests'] # Goes to the specific Database then Collection for this project.
 
 botIntents = discord.Intents.default()
 botIntents.members = True
@@ -16,9 +17,6 @@ botIntents.members = True
 bot = commands.Bot(command_prefix='.', intents=botIntents) 
 
 checkmark = '✅' # easier to type 'checkmark' than the emoji
-
-
-
 
 @bot.command()
 async def ping(ctx):
@@ -57,35 +55,41 @@ async def quest(ctx, title, date, time):
 
 @bot.event
 async def on_ready():
-    print('Logged in as {}'.format(bot.user))
+    logging.info('Logged in as {}'.format(bot.user))
 
 @bot.event
-async def on_reaction_add(reaction, user):
-    if reaction.message.author == bot.user and user != bot.user:
-        if len(reaction.message.embeds) > 0:
-            if reaction.message.embeds[0].description.startswith('quest') and str(reaction.emoji) == checkmark and user.mention != reaction.message.embeds[0].fields[0].value:
-                    party = reaction.message.embeds[0].fields[3]
-                    newEmbed = reaction.message.embeds[0].set_field_at(3, name=party.name, value=party.value+' '+user.mention)
-                    await reaction.message.edit(embed = newEmbed)
-                    questDoc = await questDB.find_one({'_id': reaction.message.embeds[0].description})
+async def on_raw_reaction_add(payload):
+    channel = await bot.fetch_channel(payload.channel_id)
+    message = await channel.fetch_message(payload.message_id)
+    user = await bot.fetch_user(payload.user_id)
+    if message.author == bot.user and user != bot.user:
+        if len(message.embeds) > 0:
+            if message.embeds[0].description.startswith('quest') and str(payload.emoji) == checkmark and user.mention != message.embeds[0].fields[0].value:
+                    party = message.embeds[0].fields[3]
+                    newEmbed = message.embeds[0].set_field_at(3, name=party.name, value=party.value+' '+user.mention)
+                    await message.edit(embed = newEmbed)
+                    questDoc = await questDB.find_one({'_id': message.embeds[0].description})
                     questDoc['members'].append(user.id)
-                    await questDB.replace_one({'_id': reaction.message.embeds[0].description}, questDoc)
+                    await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
 
 @bot.event
-async def on_reaction_remove(reaction, user):
-    if reaction.message.author == bot.user and user != bot.user:
-        if len(reaction.message.embeds) > 0:
-            if reaction.message.embeds[0].description.startswith('quest') and str(reaction.emoji) == checkmark and user.mention != reaction.message.embeds[0].fields[0].value:
-                party = reaction.message.embeds[0].fields[3]
+async def on_raw_reaction_remove(payload):
+    channel = await bot.fetch_channel(payload.channel_id)
+    message = await channel.fetch_message(payload.message_id)
+    user = await bot.fetch_user(payload.user_id)
+    if message.author == bot.user and user != bot.user:
+        if len(message.embeds) > 0:
+            if message.embeds[0].description.startswith('quest') and str(payload.emoji) == checkmark and user.mention != message.embeds[0].fields[0].value:
+                party = message.embeds[0].fields[3]
                 if user.name == user.display_name:
                     newParty = party.value.replace('<@{}>'.format(user.id), '', 1)
                 else:
                     newParty = party.value.replace('<@!{}>'.format(user.id), '', 1)
-                newEmbed = reaction.message.embeds[0].set_field_at(3, name=party.name, value=newParty)
-                await reaction.message.edit(embed = newEmbed)
-                questDoc = await questDB.find_one({'_id': reaction.message.embeds[0].description})
+                newEmbed = message.embeds[0].set_field_at(3, name=party.name, value=newParty)
+                await message.edit(embed = newEmbed)
+                questDoc = await questDB.find_one({'_id': message.embeds[0].description})
                 questDoc['members'].remove(user.id)
-                await questDB.replace_one({'_id': reaction.message.embeds[0].description}, questDoc)
+                await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
 
 
 bot.run(bot_token)
