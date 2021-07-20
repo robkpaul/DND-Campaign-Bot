@@ -6,10 +6,10 @@ logging.basicConfig(level=logging.INFO)
 load_dotenv()
 bot_token = os.getenv('DISCORD_BOT_TOKEN')
 mongo_URI = os.getenv('MONGODB_URI')
-collection = os.getenv('MONGODB_COLLECTION')
+mongo_Database = os.getenv('MONGODB_COLLECTION')
 
 mongoClient = motor.motor_asyncio.AsyncIOMotorClient(mongo_URI, serverSelectionTimeoutMS=5000, ssl=True, ssl_cert_reqs='CERT_NONE') # Client for the Motor MongoDB
-questDB = mongoClient[collection]['Quests'] # Goes to the specific Database then Collection for this project.
+questDB = mongoClient[mongo_Database]['Quests'] # Goes to the specific Database then Collection for this project.
 
 botIntents = discord.Intents.default()
 botIntents.members = True
