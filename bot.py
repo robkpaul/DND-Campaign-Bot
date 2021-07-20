@@ -17,9 +17,6 @@ bot = commands.Bot(command_prefix='.', intents=botIntents)
 
 checkmark = '✅' # easier to type 'checkmark' than the emoji
 
-
-
-
 @bot.command()
 async def ping(ctx):
     await ctx.send(f'Latency: {bot.latency}')
@@ -57,7 +54,7 @@ async def quest(ctx, title, date, time):
 
 @bot.event
 async def on_ready():
-    print('Logged in as {}'.format(bot.user))
+    logging.info('Logged in as {}'.format(bot.user))
 
 @bot.event
 async def on_reaction_add(reaction, user):
