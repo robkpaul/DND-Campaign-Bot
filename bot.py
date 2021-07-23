@@ -37,6 +37,8 @@ async def quest(ctx, title, date, time):
         questData['creator'] = ctx.author.id
         questData['members'] = []
 
+        logging.info('Created new quest "{}", requested by {}'.format(title, ctx.author))
+
         oldCounter = await questDB.find_one({'_id': 'counter'}) #gets the counter document from the database
         newCounter = {'_id': 'counter', 'quests': oldCounter['quests']+1}
         questData['_id'] = 'quest%s' % str(newCounter['quests'])
@@ -74,6 +76,8 @@ async def on_raw_reaction_add(payload): # payload contains all of the details ab
                     questDoc['members'].append(user.id)
                     await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
 
+                    logging.info('{} joined "{}"'.format(user, message.embeds[0].title))
+
 @bot.event
 async def on_raw_reaction_remove(payload):
     channel = await bot.fetch_channel(payload.channel_id)
@@ -92,6 +96,8 @@ async def on_raw_reaction_remove(payload):
                 questDoc = await questDB.find_one({'_id': message.embeds[0].description})
                 questDoc['members'].remove(user.id)
                 await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
+
+                logging.info('{} left "{}"'.format(user, message.embeds[0].title))
 
 
 bot.run(bot_token)
