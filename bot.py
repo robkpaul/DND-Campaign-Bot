@@ -68,15 +68,16 @@ async def on_raw_reaction_add(payload): # payload contains all of the details ab
     user = await bot.fetch_user(payload.user_id)
     if message.author == bot.user and user != bot.user:
         if len(message.embeds) > 0:
-            if message.embeds[0].description.startswith('quest') and str(payload.emoji) == checkmark and user.mention != message.embeds[0].fields[0].value: # checks that it is a quest embed, the emoji is a checkmark, and the creator of the quest (user not bot) is not the one who reacted
-                party = message.embeds[0].fields[3]
-                newEmbed = message.embeds[0].set_field_at(3, name=party.name, value=party.value+' '+user.mention)
-                await message.edit(embed = newEmbed)
+            if message.embeds[0].description.startswith('quest') and str(payload.emoji) == checkmark: # checks that it is a quest embed, the emoji is a checkmark, and the creator of the quest (user not bot) is not the one who reacted
                 questDoc = await questDB.find_one({'_id': message.embeds[0].description})
-                questDoc['members'].append(user.id)
-                await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
-
-                logging.info('{} joined "{}"'.format(user, message.embeds[0].title))
+                if questDoc['creator'] != user.id:
+                    party = message.embeds[0].fields[3]
+                    newEmbed = message.embeds[0].set_field_at(3, name=party.name, value=party.value+' '+user.mention)
+                    await message.edit(embed = newEmbed)
+                    questDoc['members'].append(user.id)
+                    await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
+                    
+                    logging.info('{} joined "{}"'.format(user, message.embeds[0].title))
 
 @bot.event
 async def on_raw_reaction_remove(payload):
@@ -85,19 +86,20 @@ async def on_raw_reaction_remove(payload):
     user = await bot.fetch_user(payload.user_id)
     if message.author == bot.user and user != bot.user:
         if len(message.embeds) > 0:
-            if message.embeds[0].description.startswith('quest') and str(payload.emoji) == checkmark and user.mention != message.embeds[0].fields[0].value: # same logic as the on_raw_reaction_add() above
-                party = message.embeds[0].fields[3]
-                if user.name == user.display_name:
-                    newParty = party.value.replace('<@{}>'.format(user.id), '', 1)
-                else:
-                    newParty = party.value.replace('<@!{}>'.format(user.id), '', 1)
-                newEmbed = message.embeds[0].set_field_at(3, name=party.name, value=newParty)
-                await message.edit(embed = newEmbed)
+            if message.embeds[0].description.startswith('quest') and str(payload.emoji) == checkmark: # same logic as the on_raw_reaction_add() above
                 questDoc = await questDB.find_one({'_id': message.embeds[0].description})
-                questDoc['members'].remove(user.id)
-                await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
+                if questDoc['creator'] != user.id:    
+                    party = message.embeds[0].fields[3]
+                    if user.name == user.display_name:
+                        newParty = party.value.replace('<@{}>'.format(user.id), '', 1)
+                    else:
+                        newParty = party.value.replace('<@!{}>'.format(user.id), '', 1)
+                    newEmbed = message.embeds[0].set_field_at(3, name=party.name, value=newParty)
+                    await message.edit(embed = newEmbed)
+                    questDoc['members'].remove(user.id)
+                    await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
 
-                logging.info('{} left "{}"'.format(user, message.embeds[0].title))
+                    logging.info('{} left "{}"'.format(user, message.embeds[0].title))
 
 
 bot.run(bot_token)
