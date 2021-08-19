@@ -6,10 +6,10 @@ logging.basicConfig(level=logging.INFO)
 load_dotenv()
 bot_token = os.getenv('DISCORD_BOT_TOKEN')
 mongo_URI = os.getenv('MONGODB_URI')
-mongo_Database = os.getenv('MONGODB_COLLECTION')
+mongo_collection = os.getenv('MONGODB_COLLECTION')
 
 mongoClient = motor.motor_asyncio.AsyncIOMotorClient(mongo_URI, serverSelectionTimeoutMS=5000, ssl=True, ssl_cert_reqs='CERT_NONE') # Client for the Motor MongoDB
-questDB = mongoClient[mongo_Database]['Quests'] # Goes to the specific Database then Collection for this project.
+questDB = mongoClient[mongo_collection]['Quests'] # Goes to the specific Database then Collection for this project.
 
 botIntents = discord.Intents.default()
 botIntents.members = True
@@ -69,14 +69,14 @@ async def on_raw_reaction_add(payload): # payload contains all of the details ab
     if message.author == bot.user and user != bot.user:
         if len(message.embeds) > 0:
             if message.embeds[0].description.startswith('quest') and str(payload.emoji) == checkmark and user.mention != message.embeds[0].fields[0].value: # checks that it is a quest embed, the emoji is a checkmark, and the creator of the quest (user not bot) is not the one who reacted
-                    party = message.embeds[0].fields[3]
-                    newEmbed = message.embeds[0].set_field_at(3, name=party.name, value=party.value+' '+user.mention)
-                    await message.edit(embed = newEmbed)
-                    questDoc = await questDB.find_one({'_id': message.embeds[0].description})
-                    questDoc['members'].append(user.id)
-                    await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
+                party = message.embeds[0].fields[3]
+                newEmbed = message.embeds[0].set_field_at(3, name=party.name, value=party.value+' '+user.mention)
+                await message.edit(embed = newEmbed)
+                questDoc = await questDB.find_one({'_id': message.embeds[0].description})
+                questDoc['members'].append(user.id)
+                await questDB.replace_one({'_id': message.embeds[0].description}, questDoc)
 
-                    logging.info('{} joined "{}"'.format(user, message.embeds[0].title))
+                logging.info('{} joined "{}"'.format(user, message.embeds[0].title))
 
 @bot.event
 async def on_raw_reaction_remove(payload):
