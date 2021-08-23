@@ -42,9 +42,8 @@ async def quest(ctx, title, date, time):
         oldCounter = await questDB.find_one({'_id': 'counter'}) #gets the counter document from the database
         newCounter = {'_id': 'counter', 'quests': oldCounter['quests']+1}
         questData['_id'] = 'quest%s' % str(newCounter['quests'])
-        
         await questDB.replace_one({'_id': 'counter'}, newCounter) # replaces the counter document in the database with the new one (basically just a +1 to the quest counter)
-        await questDB.insert_one(questData) # inserts the current quest into the quest collection
+        
         
         #creating the embed for the quest message
         questResponse = discord.Embed(title= questData['title'], description= questData['_id'])
@@ -53,9 +52,11 @@ async def quest(ctx, title, date, time):
         questResponse.add_field(name= chr(173), value= chr(173))
         questResponse.add_field(name= 'Party Members', value= ctx.author.mention)
         questResponse.set_footer(text= 'React with a %s to join.' % checkmark)
-        
         msg = await ctx.send(embed = questResponse) #sending the message
         await msg.add_reaction(checkmark) #adding a reaction to the message
+
+        questDB['msg'] = msg.id
+        await questDB.insert_one(questData) # inserts the current quest into the quest collection
 
 @bot.event
 async def on_ready():
